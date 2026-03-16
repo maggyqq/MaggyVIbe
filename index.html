@@ -1,325 +1,251 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Maggy Vibe</title>
-
 <link rel="manifest" href="manifest.json">
-
 <style>
-
 body{
-font-family:Arial;
-background:#0f0f10;
-color:white;
-text-align:center;
-padding:20px;
+  font-family:Arial;
+  background:#0f0f10;
+  color:white;
+  text-align:center;
+  padding:20px;
 }
-
 input{
-padding:10px;
-margin:8px;
-border-radius:8px;
-border:none;
+  padding:10px;
+  margin:8px;
+  border-radius:8px;
+  border:none;
 }
-
 button{
-padding:10px 18px;
-border:none;
-border-radius:8px;
-background:#ff4da6;
-color:white;
-font-weight:bold;
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  background:#ff4da6;
+  color:white;
+  font-weight:bold;
 }
-
 #chat{display:none}
-
 #messages{
-max-width:500px;
-margin:auto;
-text-align:left;
-margin-top:20px;
+  max-width:500px;
+  margin:auto;
+  text-align:left;
+  margin-top:20px;
 }
-
 .message{
-background:#1b1b1d;
-padding:10px;
-border-radius:10px;
-margin-bottom:8px;
-display:flex;
-gap:10px;
+  background:#1b1b1d;
+  padding:10px;
+  border-radius:10px;
+  margin-bottom:8px;
+  display:flex;
+  gap:10px;
 }
-
 .avatar{
-width:32px;
-height:32px;
-border-radius:50%;
-background:#ff4da6;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:#ff4da6;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
 }
-
 .username{
-color:#ff4da6;
-font-weight:bold;
+  color:#ff4da6;
+  font-weight:bold;
 }
-
+.online-user{
+  display:inline-block;
+  margin-right:5px;
+}
+.chat-toggle{
+  margin-top:10px;
+  display:inline-block;
+  cursor:pointer;
+  color:#ff4da6;
+  font-weight:bold;
+}
 </style>
-
 </head>
-
 <body>
 
 <h1>Maggy Vibe</h1>
 
 <div id="codeScreen">
-
-<p>Введите секретный код</p>
-
-<input id="codeInput">
-
-<br>
-
-<button onclick="checkCode()">Continue</button>
-
+  <p>Введите секретный код</p>
+  <input id="codeInput">
+  <br>
+  <button onclick="checkCode()">Continue</button>
 </div>
 
 <div id="registerScreen" style="display:none">
-
-<p>Ваш ник</p>
-
-<input id="usernameInput">
-
-<br>
-
-<button onclick="enterChat()">Enter Chat</button>
-
+  <p>Ваш ник</p>
+  <input id="usernameInput">
+  <br>
+  <button onclick="enterChat()">Enter Chat</button>
 </div>
 
 <div id="chat">
-
-<h2>Общий чат</h2>
-
-<div id="onlineUsers"></div>
-
-<div id="messages"></div>
-
-<input id="messageInput" placeholder="Сообщение">
-
-<button onclick="sendMessage()">Send</button>
-
+  <h2 id="chatTitle">Общий чат</h2>
+  <div id="onlineUsers"></div>
+  <div id="messages"></div>
+  <input id="messageInput" placeholder="Сообщение">
+  <button onclick="sendMessage()">Send</button>
+  <br><br>
+  <span id="backToGeneral" class="chat-toggle" style="display:none;" onclick="backToGeneral()">← Вернуться в общий чат</span>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
 <script>
-
 const firebaseConfig = {
-
-apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
-authDomain:"https://maggyvibeqq.firebaseapp.com",
-projectId:"maggyvibeqq",
-storageBucket:"https://maggyvibeqq.firebasestorage.app",
-messagingSenderId:"576302427084",
-appId:"1:576302427084:web:64464bfc7926f180a90b69"
-
+  apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
+  authDomain:"https://maggyvibeqq.firebaseapp.com",
+  projectId:"maggyvibeqq",
+  storageBucket:"https://maggyvibeqq.firebasestorage.app",
+  messagingSenderId:"576302427084",
+  appId:"1:576302427084:web:64464bfc7926f180a90b69"
 };
-
 firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-const db=firebase.firestore();
-
-const secretCode="MAGGY2026";
-
-let username=localStorage.getItem("maggyUser")||"";
+const secretCode = "MAGGY2026";
+let username = localStorage.getItem("maggyUser")||"";
+let onlineInterval;
+let currentChat = null; // null = общий чат, иначе = ник другого пользователя
 
 if(username){
-
-document.getElementById("codeScreen").style.display="none";
-document.getElementById("chat").style.display="block";
-
-startChat();
-
+  document.getElementById("codeScreen").style.display="none";
+  document.getElementById("chat").style.display="block";
+  startChat();
 }
 
 function checkCode(){
-
-let code=document.getElementById("codeInput").value;
-
-if(code===secretCode){
-
-document.getElementById("codeScreen").style.display="none";
-document.getElementById("registerScreen").style.display="block";
-
-}else{
-
-alert("Wrong code");
-
-}
-
+  let code = document.getElementById("codeInput").value;
+  if(code === secretCode){
+    document.getElementById("codeScreen").style.display="none";
+    document.getElementById("registerScreen").style.display="block";
+  }else{
+    alert("Wrong code");
+  }
 }
 
 function enterChat(){
-
-username=document.getElementById("usernameInput").value;
-
-if(username==""){
-
-alert("Введите ник");
-
-return;
-
+  username = document.getElementById("usernameInput").value.trim();
+  if(!username){ alert("Введите ник"); return; }
+  localStorage.setItem("maggyUser", username);
+  document.getElementById("registerScreen").style.display="none";
+  document.getElementById("chat").style.display="block";
+  startChat();
 }
 
-localStorage.setItem("maggyUser",username);
-
-document.getElementById("registerScreen").style.display="none";
-document.getElementById("chat").style.display="block";
-
-startChat();
-
-}
-
-function avatarLetter(name){
-
-return name.charAt(0).toUpperCase();
-
-}
+function avatarLetter(name){ return name.charAt(0).toUpperCase(); }
 
 function sendMessage(){
+  let text = document.getElementById("messageInput").value.trim();
+  if(!text) return;
 
-let text=document.getElementById("messageInput").value;
+  let recipient = currentChat || null;
 
-if(text=="")return;
+  db.collection("messages").add({
+    user: username,
+    text: text,
+    recipient: recipient,
+    time: Date.now()
+  });
 
-db.collection("messages").add({
-
-user:username,
-text:text,
-time:Date.now()
-
-});
-
-document.getElementById("messageInput").value="";
-
+  document.getElementById("messageInput").value="";
 }
 
 function startChat(){
-
-loadMessages();
-setOnline();
-watchOnline();
-watchDM();
-
+  loadMessages();
+  setOnline();
+  watchOnline();
+  onlineInterval = setInterval(setOnline, 15000); // обновление онлайн каждые 15 сек
 }
 
 function loadMessages(){
-
-db.collection("messages")
-
-.orderBy("time")
-
-.onSnapshot(snapshot=>{
-
-let html="";
-
-snapshot.forEach(doc=>{
-
-let m=doc.data();
-
-html+=`
-<div class="message">
-<div class="avatar">${avatarLetter(m.user)}</div>
-<div>
-<span class="username">${m.user}</span>
-${m.text}
-<br>
-<button onclick="sendDM('${m.user}')">DM</button>
-</div>
-</div>
-`;
-
-});
-
-document.getElementById("messages").innerHTML=html;
-
-});
-
+  db.collection("messages").orderBy("time")
+  .onSnapshot(snapshot=>{
+    let html="";
+    snapshot.forEach(doc=>{
+      let m = doc.data();
+      if(!m.recipient){ // общий чат
+        if(currentChat === null){
+          html+=messageHtml(m);
+        }
+      }else{ // личный чат
+        if((m.user===username && m.recipient===currentChat) || (m.user===currentChat && m.recipient===username)){
+          html+=messageHtml(m,true);
+        }
+      }
+    });
+    document.getElementById("messages").innerHTML = html;
+    document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+  });
 }
 
-function sendDM(user){
-let text=prompt("Message to"+user);
-if(!text)return;
-db.collection("private_messages").add({
-from:username,
-to:user,
-text:text,
-time:Date.now()
-});
-}
-
-function watchDM(){
-db.collection("private_messages")
-.where("to","==",username)
-.onSnapshot=>{
-snapshot.forEach(doc=>{
-let m=doc.data();
-alert("DM from "+m.from+":"+m.text);
-});
-});
+function messageHtml(m,isPrivate=false){
+  return `
+    <div class="message">
+      <div class="avatar">${avatarLetter(m.user)}</div>
+      <div>
+        <span class="username">${m.user}</span>
+        ${isPrivate ? `<i>(private)</i> ` : ""}${m.text}
+      </div>
+    </div>
+  `;
 }
 
 function setOnline(){
-setInterval(()=>{
-
-db.collection("online").doc(username).set({
-
-name:username,
-time:Date.now()
-
-});
-
-},5000);
+  db.collection("online").doc(username).set({
+    name: username,
+    time: Date.now()
+  });
 }
 
 function watchOnline(){
+  db.collection("online")
+  .onSnapshot(snapshot=>{
+    let users = [];
+    let now = Date.now();
+    snapshot.forEach(doc=>{
+      let u = doc.data();
+      if(now - u.time < 30000) users.push(u.name); // онлайн 30 сек
+    });
 
-db.collection("online")
-
-.onSnapshot(snapshot=>{
-
-let users=[];
-let now=Date.now();
-
-snapshot.forEach(doc=>{
-let data=doc.data();
-if(now - data.time < 15000){
-users.push(data.name);
+    // формируем список с кнопками личного чата
+    let html = "Online: ";
+    users.forEach(u=>{
+      html += `<span class="online-user">${u}`;
+      if(u!==username){
+        html += ` <span class="chat-toggle" onclick="startPrivateChat('${u}')">[Личный чат]</span>`;
+      }
+      html += `</span>`;
+    });
+    document.getElementById("onlineUsers").innerHTML = html;
+  });
 }
 
+function startPrivateChat(otherUser){
+  currentChat = otherUser;
+  document.getElementById("chatTitle").innerText = `Личный чат с ${otherUser}`;
+  document.getElementById("backToGeneral").style.display = "inline-block";
+  loadMessages();
+}
 
-});
-
-document.getElementById("onlineUsers").innerText="Online: "+users.join(", ");
-
-});
-
+function backToGeneral(){
+  currentChat = null;
+  document.getElementById("chatTitle").innerText = "Общий чат";
+  document.getElementById("backToGeneral").style.display = "none";
+  loadMessages();
 }
 
 if('serviceWorker' in navigator){
-
-navigator.serviceWorker.register('service-worker.js');
-
+  navigator.serviceWorker.register('service-worker.js');
 }
-
 </script>
-
 </body>
-
 </html>
