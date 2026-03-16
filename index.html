@@ -1,58 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Maggy Vibe</title>
+
+<link rel="manifest" href="manifest.json">
+
 <style>
+
 body{
-font-family: Arial;
-background:#111;
+font-family:Arial;
+background:#0f0f10;
 color:white;
 text-align:center;
-padding:40px;
+padding:20px;
 }
 
 input{
 padding:10px;
-margin:10px;
-border-radius:6px;
+margin:8px;
+border-radius:8px;
 border:none;
 }
 
 button{
-padding:10px 20px;
+padding:10px 18px;
 border:none;
-border-radius:6px;
+border-radius:8px;
 background:#ff4da6;
 color:white;
 font-weight:bold;
-cursor:pointer;
 }
 
-#chat{
-display:none;
-margin-top:30px;
-}
+#chat{display:none}
 
 #messages{
-margin:20px auto;
-max-width:400px;
+max-width:500px;
+margin:auto;
 text-align:left;
+margin-top:20px;
 }
 
 .message{
-background:#1e1e1e;
-padding:8px 12px;
-border-radius:8px;
+background:#1b1b1d;
+padding:10px;
+border-radius:10px;
 margin-bottom:8px;
+display:flex;
+gap:10px;
+}
+
+.avatar{
+width:32px;
+height:32px;
+border-radius:50%;
+background:#ff4da6;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
 }
 
 .username{
-font-weight:bold;
 color:#ff4da6;
+font-weight:bold;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -60,46 +78,88 @@ color:#ff4da6;
 <h1>Maggy Vibe</h1>
 
 <div id="codeScreen">
+
 <p>Введите секретный код</p>
-<input id="codeInput" placeholder="Secret code">
+
+<input id="codeInput">
+
 <br>
+
 <button onclick="checkCode()">Continue</button>
+
 </div>
 
-<div id="registerScreen" style="display:none;">
-<p>Выбери ник</p>
-<input id="usernameInput" placeholder="Username">
+<div id="registerScreen" style="display:none">
+
+<p>Ваш ник</p>
+
+<input id="usernameInput">
+
 <br>
+
 <button onclick="enterChat()">Enter Chat</button>
+
 </div>
 
 <div id="chat">
-<h2>Чат</h2>
+
+<h2>Общий чат</h2>
+
+<div id="onlineUsers"></div>
 
 <div id="messages"></div>
 
 <input id="messageInput" placeholder="Сообщение">
+
 <button onclick="sendMessage()">Send</button>
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <script>
 
-const secretCode = "MAGGY2026";
-let username = "";
+const firebaseConfig = {
+
+apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
+authDomain:"https://maggyvibeqq.firebaseapp.com",
+projectId:"maggyvibeqq",
+storageBucket:"https://maggyvibeqq.firebasestorage.app",
+messagingSenderId:"576302427084",
+appId:"1:576302427084:web:64464bfc7926f180a90b69"
+
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db=firebase.firestore();
+
+const secretCode="MAGGY2026";
+
+let username=localStorage.getItem("maggyUser")||"";
+
+if(username){
+
+document.getElementById("codeScreen").style.display="none";
+document.getElementById("chat").style.display="block";
+
+startChat();
+
+}
 
 function checkCode(){
 
-let code = document.getElementById("codeInput").value;
+let code=document.getElementById("codeInput").value;
 
-if(code === secretCode){
+if(code===secretCode){
 
 document.getElementById("codeScreen").style.display="none";
 document.getElementById("registerScreen").style.display="block";
 
 }else{
 
-alert("Неверный код");
+alert("Wrong code");
 
 }
 
@@ -107,41 +167,128 @@ alert("Неверный код");
 
 function enterChat(){
 
-let name = document.getElementById("usernameInput").value;
+username=document.getElementById("usernameInput").value;
 
-if(name.trim() === ""){
+if(username==""){
+
 alert("Введите ник");
+
 return;
+
 }
 
-username = name;
+localStorage.setItem("maggyUser",username);
 
 document.getElementById("registerScreen").style.display="none";
 document.getElementById("chat").style.display="block";
+
+startChat();
+
+}
+
+function avatarLetter(name){
+
+return name.charAt(0).toUpperCase();
 
 }
 
 function sendMessage(){
 
-let input = document.getElementById("messageInput");
-let msg = input.value;
+let text=document.getElementById("messageInput").value;
 
-if(msg.trim() === "") return;
+if(text=="")return;
 
-let div = document.createElement("div");
-div.className = "message";
+db.collection("messages").add({
 
-div.innerHTML = "<span class='username'>" + username + ":</span> " + msg;
+user:username,
+text:text,
+time:Date.now()
 
-document.getElementById("messages").appendChild(div);
+});
 
-input.value="";
+document.getElementById("messageInput").value="";
 
-window.scrollTo(0,document.body.scrollHeight);
+}
+
+function startChat(){
+
+loadMessages();
+setOnline();
+watchOnline();
+
+}
+
+function loadMessages(){
+
+db.collection("messages")
+
+.orderBy("time")
+
+.onSnapshot(snapshot=>{
+
+let html="";
+
+snapshot.forEach(doc=>{
+
+let m=doc.data();
+
+html+=`
+<div class="message">
+<div class="avatar">${avatarLetter(m.user)}</div>
+<div>
+<span class="username">${m.user}</span>
+${m.text}
+</div>
+</div>
+`;
+
+});
+
+document.getElementById("messages").innerHTML=html;
+
+});
+
+}
+
+function setOnline(){
+
+db.collection("online").doc(username).set({
+
+name:username,
+time:Date.now()
+
+});
+
+}
+
+function watchOnline(){
+
+db.collection("online")
+
+.onSnapshot(snapshot=>{
+
+let users=[];
+
+snapshot.forEach(doc=>{
+
+users.push(doc.data().name);
+
+});
+
+document.getElementById("onlineUsers").innerText="Online: "+users.join(", ");
+
+});
+
+}
+
+if('serviceWorker' in navigator){
+
+navigator.serviceWorker.register('service-worker.js');
 
 }
 
 </script>
 
 </body>
+
 </html>
