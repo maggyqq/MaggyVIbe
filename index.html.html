@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Maggy Vibe</title>
+<style>
+body{
+font-family: Arial;
+background:#111;
+color:white;
+text-align:center;
+padding:40px;
+}
+
+input{
+padding:10px;
+margin:10px;
+border-radius:6px;
+border:none;
+}
+
+button{
+padding:10px 20px;
+border:none;
+border-radius:6px;
+background:#ff4da6;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+#chat{
+display:none;
+margin-top:30px;
+}
+
+#messages{
+margin:20px auto;
+max-width:400px;
+text-align:left;
+}
+
+.message{
+background:#1e1e1e;
+padding:8px 12px;
+border-radius:8px;
+margin-bottom:8px;
+}
+
+.username{
+font-weight:bold;
+color:#ff4da6;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Maggy Vibe</h1>
+
+<div id="codeScreen">
+<p>Введите секретный код</p>
+<input id="codeInput" placeholder="Secret code">
+<br>
+<button onclick="checkCode()">Continue</button>
+</div>
+
+<div id="registerScreen" style="display:none;">
+<p>Выбери ник</p>
+<input id="usernameInput" placeholder="Username">
+<br>
+<button onclick="enterChat()">Enter Chat</button>
+</div>
+
+<div id="chat">
+<h2>Чат</h2>
+
+<div id="messages"></div>
+
+<input id="messageInput" placeholder="Сообщение">
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+<script>
+
+const secretCode = "MAGGY2026";
+let username = "";
+
+function checkCode(){
+
+let code = document.getElementById("codeInput").value;
+
+if(code === secretCode){
+
+document.getElementById("codeScreen").style.display="none";
+document.getElementById("registerScreen").style.display="block";
+
+}else{
+
+alert("Неверный код");
+
+}
+
+}
+
+function enterChat(){
+
+let name = document.getElementById("usernameInput").value;
+
+if(name.trim() === ""){
+alert("Введите ник");
+return;
+}
+
+username = name;
+
+document.getElementById("registerScreen").style.display="none";
+document.getElementById("chat").style.display="block";
+
+}
+
+function sendMessage(){
+
+let input = document.getElementById("messageInput");
+let msg = input.value;
+
+if(msg.trim() === "") return;
+
+let div = document.createElement("div");
+div.className = "message";
+
+div.innerHTML = "<span class='username'>" + username + ":</span> " + msg;
+
+document.getElementById("messages").appendChild(div);
+
+input.value="";
+
+window.scrollTo(0,document.body.scrollHeight);
+
+}
+
+</script>
+
+</body>
+</html>
