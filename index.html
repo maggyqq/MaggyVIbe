@@ -251,6 +251,7 @@ document.getElementById("messages").innerHTML=html;
 }
 
 function setOnline(){
+  setInterval(()=>{
 
 db.collection("online").doc(username).set({
 
@@ -259,6 +260,7 @@ time:Date.now()
 
 });
 
+},5000);
 }
 
 function watchOnline(){
@@ -268,10 +270,14 @@ db.collection("online")
 .onSnapshot(snapshot=>{
 
 let users=[];
+  let now=Date.now();
 
 snapshot.forEach(doc=>{
+  let data=doc.data();
+  if(now - data.time < 15000){
+    users.push(data.name);
+  }
 
-users.push(doc.data().name);
 
 });
 
