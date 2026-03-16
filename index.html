@@ -254,29 +254,29 @@ document.getElementById("messages").innerHTML=html;
 }
 
 function sendDM(user){
-  let text=prompt("Message to"+user);
-  if(!text)return;
-  db.collection("private_messages").add({
-    from:username,
-    to:user,
-    text:text,
-    time:Date.now()
-  });
+let text=prompt("Message to"+user);
+if(!text)return;
+db.collection("private_messages").add({
+from:username,
+to:user,
+text:text,
+time:Date.now()
+});
 }
 
-  function watchDM(){
-    db.collection("private_messages")
-    .where("to","==",username)
-    .onSnapshot=>{
-      snapshot.forEach(doc=>{
-        let m=doc.data();
-        alert("DM from "+m.from+":"+m.text);
-      });
-    });
-  }
+function watchDM(){
+db.collection("private_messages")
+.where("to","==",username)
+.onSnapshot=>{
+snapshot.forEach(doc=>{
+let m=doc.data();
+alert("DM from "+m.from+":"+m.text);
+});
+});
+}
 
 function setOnline(){
-  setInterval(()=>{
+setInterval(()=>{
 
 db.collection("online").doc(username).set({
 
@@ -295,13 +295,13 @@ db.collection("online")
 .onSnapshot(snapshot=>{
 
 let users=[];
-  let now=Date.now();
+let now=Date.now();
 
 snapshot.forEach(doc=>{
-  let data=doc.data();
-  if(now - data.time < 15000){
-    users.push(data.name);
-  }
+let data=doc.data();
+if(now - data.time < 15000){
+users.push(data.name);
+}
 
 
 });
