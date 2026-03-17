@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Maggy Vibe</title>
+<title>Maggy Vibe v2</title>
 
 <style>
-
 body{
 margin:0;
 font-family:Arial;
@@ -140,65 +137,45 @@ cursor:pointer;
 .user:hover{
 color:#ff4da6;
 }
-
 </style>
-
 </head>
 
 <body>
 
 <div id="login">
-
 <h2>Maggy Vibe</h2>
-
 <p>Secret code</p>
 <input id="codeInput">
-
 <p>Nickname</p>
 <input id="usernameInput">
-
 <button onclick="enter()">Enter</button>
-
 </div>
 
 <div id="app">
-
 <div id="sidebar">
-
 <h2>Chats</h2>
-
 <div id="chatList"></div>
-
 <div id="users">
 <h3>Users</h3>
 <div id="userList"></div>
 </div>
-
 </div>
 
 <div id="chatWindow">
-
-<div id="chatHeader">
-Select chat
-</div>
-
+<div id="chatHeader">Select chat</div>
 <div id="messages"></div>
-
 <div id="inputArea">
 <input id="messageInput" placeholder="Message">
 <button onclick="sendMessage()">Send</button>
 </div>
-
 </div>
-
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <script>
-
-// 🔥 ТВОЙ FIREBASE УЖЕ ВСТАВЛЕН
+// 🔥 Вставь свои Firebase данные
 const firebaseConfig={
 apiKey: "AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
 authDomain: "maggyvibeqq.firebaseapp.com",
@@ -216,191 +193,131 @@ const secretCode="MAGGY2026";
 let username=localStorage.getItem("maggyUser")||"";
 let currentChat=null;
 
-if(username){
-startApp();
-}
+if(username) startApp();
 
 function enter(){
+  let code=document.getElementById("codeInput").value;
+  let name=document.getElementById("usernameInput").value;
 
-let code=document.getElementById("codeInput").value;
-let name=document.getElementById("usernameInput").value;
+  if(code!==secretCode){ alert("Wrong code"); return; }
+  if(!name){ alert("Enter nickname"); return; }
 
-if(code!==secretCode){
-alert("Wrong code");
-return;
-}
-
-if(!name){
-alert("Enter nickname");
-return;
-}
-
-username=name;
-localStorage.setItem("maggyUser",username);
-
-startApp();
+  username=name;
+  localStorage.setItem("maggyUser",username);
+  startApp();
 }
 
 function startApp(){
+  document.getElementById("login").style.display="none";
+  document.getElementById("app").style.display="flex";
 
-document.getElementById("login").style.display="none";
-document.getElementById("app").style.display="flex";
+  setOnline();
+  watchUsers();
+  loadChats();
 
-setOnline();
-watchUsers();
-loadChats();
-
-Notification.requestPermission();
+  Notification.requestPermission();
 }
 
 function getChatId(a,b){
-return [a,b].sort().join("_");
+  return [a,b].sort().join("_");
 }
 
 function openChat(user){
-
-currentChat=getChatId(username,user);
-
-document.getElementById("chatHeader").innerText=user;
-
-loadMessages();
+  currentChat=getChatId(username,user);
+  document.getElementById("chatHeader").innerText=user;
+  loadMessages();
 }
 
 function sendMessage(){
+  let text=document.getElementById("messageInput").value;
+  if(!text){ return; }
+  if(!currentChat){ alert("Выбери чат"); return; }
 
-let text=document.getElementById("messageInput").value;
+  db.collection("messages").add({
+    chatId:currentChat,
+    sender:username,
+    text:text,
+    time:Date.now()
+  });
 
-if(!text){
-return;
+  db.collection("chats").doc(currentChat).set({
+    users:currentChat.split("_"),
+    last:text,
+    time:Date.now()
+  });
+
+  document.getElementById("messageInput").value="";
 }
-
-if(!currentChat){
-alert("Выбери чат");
-return;
-}
-
-db.collection("messages").add({
-chatId:currentChat,
-sender:username,
-text:text,
-time:Date.now()
-});
-
-db.collection("chats").doc(currentChat).set({
-users:currentChat.split("_"),
-last:text,
-time:Date.now()
-});
-
-document.getElementById("messageInput").value="";
-}
-
 function loadMessages(){
+  if(!currentChat) return;
 
-db.collection("messages")
-.where("chatId","==",currentChat)
+  db.collection("messages")
+    .where("chatId","==",currentChat)
+    .orderBy("time")
+    .onSnapshot(snapshot=>{
+      let html="";
+      snapshot.forEach(doc=>{
+        let m=doc.data();
+        let cls=m.sender===username?"me":"other";
+        let avatar=m.sender.charAt(0).toUpperCase();
 
-.onSnapshot(snapshot=>{
+        html+=`
+        <div style="display:flex;align-items:center;">
+          <div class="avatar">${avatar}</div>
+          <div class="message ${cls}">
+            <b>${m.sender}</b><br>
+            ${m.text}
+          </div>
+        </div>
+        `;
 
-let html="";
-
-snapshot.forEach(doc=>{
-
-let m=doc.data();
-let cls=m.sender===username?"me":"other";
-let avatar=m.sender.charAt(0).toUpperCase();
-
-html+=`
-<div style="display:flex;align-items:center;">
-<div class="avatar">${avatar}</div>
-<div class="message ${cls}">
-<b>${m.sender}</b><br>
-${m.text}
-</div>
-</div>
-`;
-
-if(m.sender!==username && Notification.permission==="granted"){
-new Notification(m.sender,{body:m.text});
-}
-
-});
-
-document.getElementById("messages").innerHTML=html;
-
-let box=document.getElementById("messages");
-box.scrollTop=box.scrollHeight;
-
-});
+        if(m.sender!==username && Notification.permission==="granted"){
+          new Notification(m.sender,{body:m.text});
+        }
+      });
+      const box=document.getElementById("messages");
+      box.innerHTML=html;
+      box.scrollTop=box.scrollHeight;
+    });
 }
 
 function loadChats(){
-
-db.collection("chats")
-.where("users","array-contains",username)
-
-.onSnapshot(snapshot=>{
-
-let html="";
-
-snapshot.forEach(doc=>{
-
-let users=doc.data().users;
-let other=users.find(u=>u!==username);
-
-html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
-
-});
-
-document.getElementById("chatList").innerHTML=html;
-
-});
+  db.collection("chats")
+    .where("users","array-contains",username)
+    .onSnapshot(snapshot=>{
+      let html="";
+      snapshot.forEach(doc=>{
+        let users=doc.data().users;
+        let other=users.find(u=>u!==username);
+        html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
+      });
+      document.getElementById("chatList").innerHTML=html;
+    });
 }
 
 function watchUsers(){
-
-db.collection("online")
-.onSnapshot(snapshot=>{
-
-let html="";
-let now=Date.now();
-
-snapshot.forEach(doc=>{
-
-let u=doc.id;
-let data=doc.data();
-
-if(u!==username){
-
-let status=(now-data.time<30000)?"🟢":"⚫️";
-
-html+=`<div class="user" onclick="openChat('${u}')">
-${status} ${u}
-</div>`;
-
-}
-
-});
-
-document.getElementById("userList").innerHTML=html;
-
-});
+  db.collection("online")
+    .onSnapshot(snapshot=>{
+      let html="";
+      let now=Date.now();
+      snapshot.forEach(doc=>{
+        let u=doc.id;
+        let data=doc.data();
+        if(u!==username){
+          let status=(now-data.time<30000)?"🟢":"⚫️";
+          html+=`<div class="user" onclick="openChat('${u}')">${status} ${u}</div>`;
+        }
+      });
+      document.getElementById("userList").innerHTML=html;
+    });
 }
 
 function setOnline(){
-
-db.collection("online").doc(username).set({
-time:Date.now()
-});
-
-setInterval(()=>{
-db.collection("online").doc(username).set({
-time:Date.now()
-});
-},20000);
-
+  db.collection("online").doc(username).set({time:Date.now()});
+  setInterval(()=>{
+    db.collection("online").doc(username).set({time:Date.now()});
+  },20000);
 }
-
 </script>
 
 </body>
