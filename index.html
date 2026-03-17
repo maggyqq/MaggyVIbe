@@ -58,10 +58,6 @@ padding:10px;
 overflow-y:auto;
 }
 
-#sidebar h2{
-margin-top:0;
-}
-
 .chatItem{
 padding:10px;
 border-radius:8px;
@@ -202,13 +198,14 @@ Select chat
 
 <script>
 
+// 🔥 ТВОЙ FIREBASE УЖЕ ВСТАВЛЕН
 const firebaseConfig={
-apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
-authDomain:"https://maggyvibeqq.firebaseapp.com",
-projectId:"maggyvibeqq",
-storageBucket:"https://maggyvibeqq.firebasestorage.app",
-messagingSenderId:"576302427084",
-appId:"1:576302427084:web:64464bfc7926f180a90b69"
+apiKey: "AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
+authDomain: "maggyvibeqq.firebaseapp.com",
+projectId: "maggyvibeqq",
+storageBucket: "maggyvibeqq.firebasestorage.app",
+messagingSenderId: "576302427084",
+appId: "1:576302427084:web:64464bfc7926f180a90b69"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -217,7 +214,6 @@ const db=firebase.firestore();
 const secretCode="MAGGY2026";
 
 let username=localStorage.getItem("maggyUser")||"";
-
 let currentChat=null;
 
 if(username){
@@ -240,11 +236,9 @@ return;
 }
 
 username=name;
-
 localStorage.setItem("maggyUser",username);
 
 startApp();
-
 }
 
 function startApp(){
@@ -257,11 +251,10 @@ watchUsers();
 loadChats();
 
 Notification.requestPermission();
-
 }
 
 function getChatId(a,b){
-return[a,b].sort().join("_");
+return [a,b].sort().join("_");
 }
 
 function openChat(user){
@@ -271,43 +264,41 @@ currentChat=getChatId(username,user);
 document.getElementById("chatHeader").innerText=user;
 
 loadMessages();
-
 }
 
 function sendMessage(){
 
 let text=document.getElementById("messageInput").value;
 
-if(!text||!currentChat)return;
+if(!text){
+return;
+}
+
+if(!currentChat){
+alert("Выбери чат");
+return;
+}
 
 db.collection("messages").add({
-
 chatId:currentChat,
 sender:username,
 text:text,
 time:Date.now()
-
 });
 
 db.collection("chats").doc(currentChat).set({
-
 users:currentChat.split("_"),
 last:text,
 time:Date.now()
-
 });
 
 document.getElementById("messageInput").value="";
-
 }
 
 function loadMessages(){
 
 db.collection("messages")
-
 .where("chatId","==",currentChat)
-
-.orderBy("time")
 
 .onSnapshot(snapshot=>{
 
@@ -316,9 +307,7 @@ let html="";
 snapshot.forEach(doc=>{
 
 let m=doc.data();
-
 let cls=m.sender===username?"me":"other";
-
 let avatar=m.sender.charAt(0).toUpperCase();
 
 html+=`
@@ -332,11 +321,7 @@ ${m.text}
 `;
 
 if(m.sender!==username && Notification.permission==="granted"){
-
-new Notification(m.sender,{
-body:m.text
-});
-
+new Notification(m.sender,{body:m.text});
 }
 
 });
@@ -347,13 +332,11 @@ let box=document.getElementById("messages");
 box.scrollTop=box.scrollHeight;
 
 });
-
 }
 
 function loadChats(){
 
 db.collection("chats")
-
 .where("users","array-contains",username)
 
 .onSnapshot(snapshot=>{
@@ -362,9 +345,8 @@ let html="";
 
 snapshot.forEach(doc=>{
 
-let chat=doc.id;
-
-let other=chat.replace(username,"").replace("_","");
+let users=doc.data().users;
+let other=users.find(u=>u!==username);
 
 html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
 
@@ -373,13 +355,11 @@ html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
 document.getElementById("chatList").innerHTML=html;
 
 });
-
 }
 
 function watchUsers(){
 
 db.collection("online")
-
 .onSnapshot(snapshot=>{
 
 let html="";
@@ -405,7 +385,6 @@ ${status} ${u}
 document.getElementById("userList").innerHTML=html;
 
 });
-
 }
 
 function setOnline(){
@@ -415,11 +394,9 @@ time:Date.now()
 });
 
 setInterval(()=>{
-
 db.collection("online").doc(username).set({
 time:Date.now()
 });
-
 },20000);
 
 }
