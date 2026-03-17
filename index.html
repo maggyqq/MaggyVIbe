@@ -12,7 +12,7 @@
 body{
 margin:0;
 font-family:Arial;
-background:#0b0b0c;
+background:#0f0f10;
 color:white;
 }
 
@@ -24,51 +24,50 @@ justify-content:center;
 height:100vh;
 }
 
-input{
-padding:12px;
-border-radius:10px;
-border:none;
-margin:6px;
-background:#1a1a1d;
-color:white;
-}
-
-button{
-padding:12px 18px;
-border:none;
-border-radius:10px;
-background:#ff2f92;
-color:white;
-font-weight:bold;
-cursor:pointer;
-box-shadow:0 0 10px #ff2f92;
-}
-
 #app{
 display:none;
 height:100vh;
+}
+
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+margin:6px;
+}
+
+button{
+padding:10px 18px;
+border:none;
+border-radius:8px;
+background:#ff4da6;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+
+#app{
 display:flex;
 }
 
 #sidebar{
-width:260px;
-background:#121214;
-border-right:1px solid #222;
+width:280px;
+background:#161618;
+border-right:1px solid #2a2a2c;
 padding:10px;
 overflow-y:auto;
 }
 
 .chatItem{
-padding:12px;
-border-radius:10px;
-background:#1b1b1f;
+padding:10px;
+border-radius:8px;
+background:#1d1d20;
 margin-bottom:6px;
 cursor:pointer;
-transition:0.2s;
 }
 
 .chatItem:hover{
-background:#ff2f92;
+background:#2a2a2e;
 }
 
 #chatWindow{
@@ -79,9 +78,8 @@ flex-direction:column;
 
 #chatHeader{
 padding:15px;
-border-bottom:1px solid #222;
+border-bottom:1px solid #2a2a2c;
 font-weight:bold;
-font-size:18px;
 }
 
 #messages{
@@ -90,38 +88,27 @@ overflow-y:auto;
 padding:20px;
 }
 
-.msgRow{
-display:flex;
-align-items:flex-end;
+.message{
+max-width:60%;
+padding:10px;
+border-radius:10px;
 margin-bottom:10px;
 }
 
-.message{
-max-width:65%;
-padding:10px;
-border-radius:12px;
-}
-
 .me{
-background:#ff2f92;
+background:#ff4da6;
 margin-left:auto;
 }
 
 .other{
-background:#1f1f23;
-}
-
-.time{
-font-size:10px;
-opacity:0.6;
-margin-top:4px;
+background:#262629;
 }
 
 .avatar{
-width:34px;
-height:34px;
+width:32px;
+height:32px;
 border-radius:50%;
-background:#ff2f92;
+background:#ff4da6;
 display:flex;
 align-items:center;
 justify-content:center;
@@ -132,11 +119,17 @@ margin-right:6px;
 #inputArea{
 display:flex;
 padding:10px;
-border-top:1px solid #222;
+border-top:1px solid #2a2a2c;
 }
 
 #messageInput{
 flex:1;
+}
+
+#users{
+margin-top:20px;
+border-top:1px solid #333;
+padding-top:10px;
 }
 
 .user{
@@ -144,12 +137,8 @@ padding:6px;
 cursor:pointer;
 }
 
-.online{
-color:#00ff9f;
-}
-
-.offline{
-color:#666;
+.user:hover{
+color:#ff4da6;
 }
 
 </style>
@@ -162,8 +151,11 @@ color:#666;
 
 <h2>Maggy Vibe</h2>
 
-<input id="codeInput" placeholder="Secret code">
-<input id="usernameInput" placeholder="Nickname">
+<p>Secret code</p>
+<input id="codeInput">
+
+<p>Nickname</p>
+<input id="usernameInput">
 
 <button onclick="enter()">Enter</button>
 
@@ -173,17 +165,22 @@ color:#666;
 
 <div id="sidebar">
 
-<h3>Chats</h3>
+<h2>Chats</h2>
+
 <div id="chatList"></div>
 
-<h4>Users</h4>
+<div id="users">
+<h3>Users</h3>
 <div id="userList"></div>
+</div>
 
 </div>
 
 <div id="chatWindow">
 
-<div id="chatHeader">Select chat</div>
+<div id="chatHeader">
+Select chat
+</div>
 
 <div id="messages"></div>
 
@@ -201,13 +198,14 @@ color:#666;
 
 <script>
 
+// 🔥 ТВОЙ FIREBASE УЖЕ ВСТАВЛЕН
 const firebaseConfig={
-apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
-authDomain:"maggyvibeqq.firebaseapp.com",
-projectId:"maggyvibeqq",
-storageBucket:"maggyvibeqq.firebasestorage.app",
-messagingSenderId:"576302427084",
-appId:"1:576302427084:web:64464bfc7926f180a90b69"
+apiKey: "AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
+authDomain: "maggyvibeqq.firebaseapp.com",
+projectId: "maggyvibeqq",
+storageBucket: "maggyvibeqq.firebasestorage.app",
+messagingSenderId: "576302427084",
+appId: "1:576302427084:web:64464bfc7926f180a90b69"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -218,15 +216,24 @@ const secretCode="MAGGY2026";
 let username=localStorage.getItem("maggyUser")||"";
 let currentChat=null;
 
-if(username) startApp();
+if(username){
+startApp();
+}
 
 function enter(){
 
-let code=codeInput.value;
-let name=usernameInput.value;
+let code=document.getElementById("codeInput").value;
+let name=document.getElementById("usernameInput").value;
 
-if(code!==secretCode) return alert("Wrong code");
-if(!name) return alert("Enter nickname");
+if(code!==secretCode){
+alert("Wrong code");
+return;
+}
+
+if(!name){
+alert("Enter nickname");
+return;
+}
 
 username=name;
 localStorage.setItem("maggyUser",username);
@@ -236,8 +243,8 @@ startApp();
 
 function startApp(){
 
-login.style.display="none";
-app.style.display="flex";
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="flex";
 
 setOnline();
 watchUsers();
@@ -253,15 +260,24 @@ return [a,b].sort().join("_");
 function openChat(user){
 
 currentChat=getChatId(username,user);
-chatHeader.innerText=user;
+
+document.getElementById("chatHeader").innerText=user;
 
 loadMessages();
 }
 
 function sendMessage(){
 
-let text=messageInput.value.trim();
-if(!text||!currentChat) return;
+let text=document.getElementById("messageInput").value;
+
+if(!text){
+return;
+}
+
+if(!currentChat){
+alert("Выбери чат");
+return;
+}
 
 db.collection("messages").add({
 chatId:currentChat,
@@ -276,14 +292,13 @@ last:text,
 time:Date.now()
 });
 
-messageInput.value="";
+document.getElementById("messageInput").value="";
 }
 
 function loadMessages(){
 
 db.collection("messages")
 .where("chatId","==",currentChat)
-.orderBy("time")
 
 .onSnapshot(snapshot=>{
 
@@ -293,26 +308,28 @@ snapshot.forEach(doc=>{
 
 let m=doc.data();
 let cls=m.sender===username?"me":"other";
-let avatar=m.sender[0].toUpperCase();
-
-let date=new Date(m.time);
-let t=date.getHours()+":"+String(date.getMinutes()).padStart(2,"0");
+let avatar=m.sender.charAt(0).toUpperCase();
 
 html+=`
-<div class="msgRow">
+<div style="display:flex;align-items:center;">
 <div class="avatar">${avatar}</div>
 <div class="message ${cls}">
 <b>${m.sender}</b><br>
 ${m.text}
-<div class="time">${t}</div>
 </div>
 </div>
 `;
 
+if(m.sender!==username && Notification.permission==="granted"){
+new Notification(m.sender,{body:m.text});
+}
+
 });
 
-messages.innerHTML=html;
-messages.scrollTop=messages.scrollHeight;
+document.getElementById("messages").innerHTML=html;
+
+let box=document.getElementById("messages");
+box.scrollTop=box.scrollHeight;
 
 });
 }
@@ -327,23 +344,26 @@ db.collection("chats")
 let html="";
 
 snapshot.forEach(doc=>{
+
 let users=doc.data().users;
 let other=users.find(u=>u!==username);
 
 html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
+
 });
 
-chatList.innerHTML=html;
+document.getElementById("chatList").innerHTML=html;
 
 });
 }
 
 function watchUsers(){
 
-db.collection("online").onSnapshot(snapshot=>{
+db.collection("online")
+.onSnapshot(snapshot=>{
 
-let now=Date.now();
 let html="";
+let now=Date.now();
 
 snapshot.forEach(doc=>{
 
@@ -352,37 +372,32 @@ let data=doc.data();
 
 if(u!==username){
 
-let online=(now-data.time<30000);
+let status=(now-data.time<30000)?"🟢":"⚫";
 
-html+=`
-<div class="user ${online?"online":"offline"}" onclick="openChat('${u}')">
-${online?"🟢":"⚫"} ${u}
-</div>
-`;
+html+=`<div class="user" onclick="openChat('${u}')">
+${status} ${u}
+</div>`;
 
 }
 
 });
 
-userList.innerHTML=html;
+document.getElementById("userList").innerHTML=html;
 
 });
 }
 
 function setOnline(){
 
-function update(){
 db.collection("online").doc(username).set({
 time:Date.now()
 });
-}
 
-update();
-setInterval(update,20000);
-
-window.addEventListener("beforeunload",()=>{
-db.collection("online").doc(username).delete();
+setInterval(()=>{
+db.collection("online").doc(username).set({
+time:Date.now()
 });
+},20000);
 
 }
 
