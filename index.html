@@ -73,7 +73,6 @@ button{
 
 <h1>Maggy Vibe</h1>
 
-<!-- Экран ввода секретного кода -->
 <div id="codeScreen">
   <p>Введите секретный код</p>
   <input id="codeInput">
@@ -81,7 +80,6 @@ button{
   <button onclick="checkCode()">Continue</button>
 </div>
 
-<!-- Экран регистрации ника -->
 <div id="registerScreen" style="display:none">
   <p>Ваш ник</p>
   <input id="usernameInput">
@@ -89,7 +87,6 @@ button{
   <button onclick="enterChat()">Enter Chat</button>
 </div>
 
-<!-- Главный чат -->
 <div id="chat">
   <h2 id="chatTitle">Общий чат</h2>
   <div id="onlineUsers"></div>
@@ -100,31 +97,31 @@ button{
   <span id="backToGeneral" class="chat-toggle" style="display:none;" onclick="backToGeneral()">← Вернуться в общий чат</span>
 </div>
 
-<!-- Звуковое уведомление -->
 <audio id="notifSound" src="https://www.myinstants.com/media/sounds/notification.mp3" preload="auto"></audio>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <script>
 const firebaseConfig = {
-  apiKey:"PASTE",
-  authDomain:"PASTE",
-  projectId:"PASTE",
-  storageBucket:"PASTE",
-  messagingSenderId:"PASTE",
-  appId:"PASTE"
+  apiKey: "AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
+  authDomain: "maggyvibeqq.firebaseapp.com",
+  projectId: "maggyvibeqq",
+  storageBucket: "maggyvibeqq.firebasestorage.app",
+  messagingSenderId: "576302427084",
+  appId: "1:576302427084:web:64464bfc7926f180a90b69"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const messaging = firebase.messaging(); // для push-уведомлений
 
 const secretCode = "MAGGY2026";
 let username = localStorage.getItem("maggyUser")||"";
 let onlineInterval;
-let currentChat = null; // null = общий чат, иначе = ник другого пользователя
+let currentChat = null;
 let lastMessageTime = 0;
 let isTabActive = true;
 
-// Проверка активности вкладки
 document.addEventListener("visibilitychange", () => {
   isTabActive = !document.hidden;
 });
@@ -159,7 +156,6 @@ function avatarLetter(name){ return name.charAt(0).toUpperCase(); }
 function sendMessage(){
   let text = document.getElementById("messageInput").value.trim();
   if(!text) return;
-
   let recipient = currentChat || null;
 
   db.collection("messages").add({
@@ -174,6 +170,7 @@ function sendMessage(){
 
 function startChat(){
   requestNotificationPermission();
+  requestPushPermission();
   loadMessages();
   setOnline();
   watchOnline();
@@ -181,13 +178,16 @@ function startChat(){
 }
 
 function requestNotificationPermission(){
-  if("Notification" in window){
-    if(Notification.permission === "default"){
-      Notification.requestPermission().then(permission => {
-        console.log("Notification permission:", permission);
-      });
-    }
+  if("Notification" in window && Notification.permission === "default"){
+    Notification.requestPermission().then(permission => console.log("Notification permission:", permission));
   }
+}
+
+function requestPushPermission(){
+  messaging.requestPermission()
+  .then(() => messaging.getToken())
+  .then(token => console.log("FCM token:", token))
+  .catch(err => console.log("FCM permission error:", err));
 }
 
 function loadMessages(){
@@ -196,12 +196,12 @@ function loadMessages(){
     let html="";
     snapshot.forEach(doc=>{
       let m = doc.data();
-      if(!m.recipient){ // общий чат
+      if(!m.recipient){
         if(currentChat === null){
           html += messageHtml(m);
           notifyNewMessage(m);
         }
-      }else{ // личный чат
+      }else{
         if((m.user===username && m.recipient===currentChat) || (m.user===currentChat && m.recipient===username)){
           html += messageHtml(m,true);
           notifyNewMessage(m,true);
@@ -226,31 +226,22 @@ function messageHtml(m,isPrivate=false){
 }
 
 function notifyNewMessage(m, isPrivate=false){
-  if(m.user === username) return; // не уведомляем себя
-  if(m.time <= lastMessageTime) return; // игнорируем старые сообщения
+  if(m.user === username) return;
+  if(m.time <= lastMessageTime) return;
   lastMessageTime = m.time;
 
-  // уведомление только если вкладка не активна
   if(!isTabActive && Notification.permission === "granted"){
     let title = isPrivate ? `Личный чат: ${m.user}` : `Новое сообщение от ${m.user}`;
-    let options = {
-      body: m.text,
-      icon: "https://via.placeholder.com/32/ff4da6/ffffff?text=M"
-    };
-    new Notification(title, options);
+    new Notification(title, { body: m.text, icon: "https://via.placeholder.com/32/ff4da6/ffffff?text=M" });
   }
 
-  // звук уведомления всегда
   const sound = document.getElementById("notifSound");
   sound.currentTime = 0;
   sound.play();
 }
 
 function setOnline(){
-  db.collection("online").doc(username).set({
-    name: username,
-    time: Date.now()
-  });
+  db.collection("online").doc(username).set({ name: username, time: Date.now() });
 }
 
 function watchOnline(){
@@ -266,9 +257,7 @@ function watchOnline(){
     let html = "Online: ";
     users.forEach(u=>{
       html += `<span class="online-user">${u}`;
-      if(u!==username){
-        html += ` <span class="chat-toggle" onclick="startPrivateChat('${u}')">[Личный чат]</span>`;
-      }
+      if(u!==username) html += ` <span class="chat-toggle" onclick="startPrivateChat('${u}')">[Личный чат]</span>`;
       html += `</span>`;
     });
     document.getElementById("onlineUsers").innerHTML = html;
