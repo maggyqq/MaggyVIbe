@@ -12,7 +12,7 @@
 body{
 margin:0;
 font-family:Arial;
-background:#0a0a0a;
+background:linear-gradient(135deg,#0a0a0a,#141414);
 color:white;
 }
 
@@ -47,22 +47,30 @@ text-align:center;
 
 /* INPUT */
 input{
-padding:10px;
-margin:6px;
+padding:12px;
+border-radius:12px;
 border:none;
-border-radius:10px;
-background:#222;
+margin:6px;
+background:#1c1c22;
 color:white;
+outline:none;
 }
 
 /* BUTTON */
 button{
-padding:10px 16px;
+padding:12px 20px;
 border:none;
-border-radius:10px;
-background:#ff2f92;
+border-radius:12px;
+background:linear-gradient(45deg,#ff2f92,#ff6ec7);
 color:white;
+font-weight:bold;
 cursor:pointer;
+box-shadow:0 0 15px #ff2f92;
+transition:0.2s;
+}
+
+button:hover{
+transform:scale(1.05);
 }
 
 /* APP */
@@ -74,14 +82,19 @@ display:flex;
 
 /* SIDEBAR */
 #sidebar{
-width:250px;
-background:#121214;
+width:260px;
+background:rgba(20,20,25,0.9);
+backdrop-filter:blur(10px);
+border-right:1px solid #2a2a2c;
 padding:10px;
 }
 
-.user{
+.chatItem{
+padding:12px;
+border-radius:12px;
+background:#1c1c22;
+margin-bottom:6px;
 cursor:pointer;
-padding:6px;
 }
 
 /* CHAT */
@@ -91,34 +104,95 @@ display:flex;
 flex-direction:column;
 }
 
+#topBar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px;
+border-bottom:1px solid #2a2a2c;
+}
+
 #messages{
 flex:1;
-padding:20px;
 overflow-y:auto;
+padding:20px;
+}
+
+.msgRow{
+display:flex;
+margin-bottom:12px;
 }
 
 .message{
-padding:10px;
-margin-bottom:10px;
-border-radius:10px;
-max-width:60%;
+position:relative;
+max-width:65%;
+padding:12px;
+border-radius:14px;
+cursor:pointer;
 }
 
 .me{
-background:#ff2f92;
+background:linear-gradient(45deg,#ff2f92,#ff6ec7);
 margin-left:auto;
 }
 
 .other{
-background:#222;
+background:#1f1f25;
 }
 
-/* HEADER */
-#topBar{
+.time{
+position:absolute;
+bottom:5px;
+right:10px;
+font-size:10px;
+opacity:0.6;
+}
+
+.reactions{
+margin-top:6px;
+font-size:14px;
+}
+
+.avatar{
+width:32px;
+height:32px;
+border-radius:50%;
 display:flex;
-justify-content:space-between;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+margin-right:6px;
+color:white;
+}
+
+#inputArea{
+display:flex;
 padding:10px;
-border-bottom:1px solid #333;
+border-top:1px solid #2a2a2c;
+}
+
+#messageInput{
+flex:1;
+}
+
+#users{
+margin-top:20px;
+border-top:1px solid #333;
+padding-top:10px;
+}
+
+.user{
+padding:6px;
+cursor:pointer;
+display:flex;
+align-items:center;
+}
+
+.userDot{
+width:10px;
+height:10px;
+border-radius:50%;
+margin-right:6px;
 }
 
 </style>
@@ -132,7 +206,9 @@ border-bottom:1px solid #333;
 <h2>Maggy Vibe</h2>
 
 <input id="codeInput" placeholder="Secret code">
-<input id="usernameInput" placeholder="Username (unique)">
+<input id="usernameInput" placeholder="Nickname">
+
+<p>Цвет аватарки</p>
 <input type="color" id="avatarColor" value="#ff2f92">
 
 <button onclick="enter()">Enter</button>
@@ -141,11 +217,11 @@ border-bottom:1px solid #333;
 <!-- PROFILE -->
 <div id="profileModal">
 <div id="profileBox">
-<h3>Profile</h3>
 
+<h3>Profile</h3>
 <p id="profileName"></p>
 
-<input type="color" id="newColor">
+<input type="color" id="profileColor">
 
 <br><br>
 
@@ -159,8 +235,15 @@ border-bottom:1px solid #333;
 <div id="app">
 
 <div id="sidebar">
-<h3>Users</h3>
+
+<h3>Chats</h3>
+<div id="chatList"></div>
+
+<div id="users">
+<h4>Users</h4>
 <div id="userList"></div>
+</div>
+
 </div>
 
 <div id="chatWindow">
@@ -172,8 +255,8 @@ border-bottom:1px solid #333;
 
 <div id="messages"></div>
 
-<div>
-<input id="messageInput">
+<div id="inputArea">
+<input id="messageInput" placeholder="Message">
 <button onclick="sendMessage()">Send</button>
 </div>
 
@@ -203,48 +286,33 @@ let currentChat=null;
 
 if(username) startApp();
 
-/* LOGIN */
 function enter(){
 
 let code=codeInput.value;
-let name=usernameInput.value.trim();
+let name=usernameInput.value;
 let color=avatarColor.value;
 
 if(code!==secretCode) return alert("Wrong code");
-if(!name) return alert("Enter username");
-
-// 🔥 ПРОВЕРКА УНИКАЛЬНОСТИ
-db.collection("users").doc(name).get().then(doc=>{
-
-if(doc.exists){
-alert("Username already taken");
-return;
-}
-
-// создаём пользователя
-db.collection("users").doc(name).set({
-avatar:color
-});
+if(!name) return alert("Enter nickname");
 
 username=name;
 avatarColorLocal=color;
 
-localStorage.setItem("maggyUser",name);
+localStorage.setItem("maggyUser",username);
 localStorage.setItem("maggyAvatar",color);
 
-startApp();
-
+db.collection("users").doc(username).set({
+avatar:color
 });
 
+startApp();
 }
 
 /* PROFILE */
 function openProfile(){
-
 profileModal.style.display="flex";
 profileName.innerText=username;
-newColor.value=avatarColorLocal;
-
+profileColor.value=avatarColorLocal;
 }
 
 function closeProfile(){
@@ -253,7 +321,7 @@ profileModal.style.display="none";
 
 function saveProfile(){
 
-let color=newColor.value;
+let color=profileColor.value;
 
 db.collection("users").doc(username).update({
 avatar:color
@@ -271,8 +339,10 @@ function startApp(){
 login.style.display="none";
 app.style.display="flex";
 
-watchUsers();
 setOnline();
+watchUsers();
+loadChats();
+
 }
 
 function getChatId(a,b){
@@ -280,87 +350,174 @@ return[a,b].sort().join("_");
 }
 
 function openChat(user){
+
 currentChat=getChatId(username,user);
 chatHeader.innerText=user;
+
 loadMessages();
 }
 
-/* SEND */
 function sendMessage(){
 
 let text=messageInput.value.trim();
-if(!text||!currentChat)return;
+if(!text||!currentChat) return;
 
 db.collection("messages").add({
 chatId:currentChat,
 sender:username,
-text,
+text:text,
 time:Date.now(),
+reactions:[],
 avatar:avatarColorLocal
+});
+
+db.collection("chats").doc(currentChat).set({
+users:currentChat.split("_"),
+last:text,
+time:Date.now()
 });
 
 messageInput.value="";
 }
 
-/* LOAD */
+function reactToMessage(id){
+
+let emoji=prompt("❤️ 😂 🔥");
+
+if(!emoji) return;
+
+let ref=db.collection("messages").doc(id);
+
+ref.get().then(doc=>{
+let r=doc.data().reactions||[];
+r.push(emoji);
+ref.update({reactions:r});
+});
+
+}
+
 function loadMessages(){
 
-db.collection("messages").onSnapshot(s=>{
+db.collection("messages")
+.where("chatId","==",currentChat)
+
+.onSnapshot(snapshot=>{
+
+let arr=[];
+
+snapshot.forEach(doc=>{
+arr.push({...doc.data(), id:doc.id});
+});
+
+arr.sort((a,b)=>a.time-b.time);
 
 let html="";
 
-s.forEach(doc=>{
-let m=doc.data();
-
-if(m.chatId!==currentChat)return;
+arr.forEach(m=>{
 
 let cls=m.sender===username?"me":"other";
 
+let avatarLetter=m.sender[0].toUpperCase();
+let avatarColor=m.avatar || "#ff2f92";
+
+let date=new Date(m.time);
+let t=date.getHours()+":"+String(date.getMinutes()).padStart(2,"0");
+
+let reactions=(m.reactions||[]).join(" ");
+
 html+=`
-<div class="message ${cls}">
+<div class="msgRow">
+<div class="avatar" style="background:${avatarColor}">
+${avatarLetter}
+</div>
+
+<div class="message ${cls}" onclick="reactToMessage('${m.id}')">
 <b>${m.sender}</b><br>
 ${m.text}
+<div class="time">${t}</div>
+<div class="reactions">${reactions}</div>
+</div>
 </div>
 `;
 
 });
 
 messages.innerHTML=html;
+messages.scrollTop=messages.scrollHeight;
 
 });
 }
 
-/* USERS */
-function watchUsers(){
+function loadChats(){
 
-db.collection("users").onSnapshot(s=>{
+db.collection("chats")
+.where("users","array-contains",username)
+
+.onSnapshot(snapshot=>{
 
 let html="";
 
-s.forEach(doc=>{
+snapshot.forEach(doc=>{
+let users=doc.data().users;
+let other=users.find(u=>u!==username);
+
+html+=`<div class="chatItem" onclick="openChat('${other}')">${other}</div>`;
+});
+
+chatList.innerHTML=html;
+
+});
+}
+
+function watchUsers(){
+
+db.collection("online").onSnapshot(snapshot=>{
+
+let now=Date.now();
+userList.innerHTML="";
+
+snapshot.forEach(doc=>{
 
 let u=doc.id;
+let data=doc.data();
 
 if(u!==username){
 
-html+=`<div class="user" onclick="openChat('${u}')">${u}</div>`;
+let online=(now-data.time<30000);
+
+db.collection("users").doc(u).get().then(userDoc=>{
+
+let color="#ff2f92";
+if(userDoc.exists){
+color=userDoc.data().avatar;
+}
+
+userList.innerHTML+=`
+<div class="user" onclick="openChat('${u}')">
+<div class="userDot" style="background:${color}"></div>
+${online?"🟢":"⚫"} ${u}
+</div>
+`;
+
+});
+
 }
 
 });
 
-userList.innerHTML=html;
-
 });
 }
 
-/* ONLINE */
 function setOnline(){
 
-setInterval(()=>{
+function update(){
 db.collection("online").doc(username).set({
 time:Date.now()
 });
-},20000);
+}
+
+update();
+setInterval(update,20000);
 
 }
 
