@@ -24,6 +24,25 @@ justify-content:center;
 height:100vh;
 }
 
+#profileModal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+#profileBox{
+background:#1c1c22;
+padding:20px;
+border-radius:12px;
+text-align:center;
+}
+
 input{
 padding:12px;
 border-radius:12px;
@@ -63,6 +82,8 @@ flex-direction:column;
 #topBar{
 padding:10px;
 border-bottom:1px solid #333;
+display:flex;
+justify-content:space-between;
 }
 
 #messages{
@@ -77,6 +98,7 @@ margin-bottom:10px;
 }
 
 .message{
+position:relative;
 padding:10px;
 border-radius:12px;
 max-width:60%;
@@ -102,6 +124,19 @@ justify-content:center;
 margin-right:6px;
 }
 
+.time{
+position:absolute;
+bottom:4px;
+right:8px;
+font-size:10px;
+opacity:0.6;
+}
+
+.reactions{
+margin-top:6px;
+font-size:14px;
+}
+
 #inputArea{
 display:flex;
 padding:10px;
@@ -110,6 +145,12 @@ border-top:1px solid #333;
 
 #messageInput{
 flex:1;
+}
+
+img{
+max-width:200px;
+border-radius:10px;
+margin-top:5px;
 }
 
 </style>
@@ -121,11 +162,22 @@ flex:1;
 <div id="login">
 <h2>Maggy Vibe</h2>
 
-<input id="codeInput" placeholder="Secret code">
+<input id="codeInput" placeholder="Code">
 <input id="usernameInput" placeholder="Username">
 <input type="color" id="avatarColor">
 
 <button onclick="enter()">Enter</button>
+</div>
+
+<div id="profileModal">
+<div id="profileBox">
+<h3>Profile</h3>
+<p id="profileName"></p>
+<input type="color" id="profileColor">
+<br><br>
+<button onclick="saveProfile()">Save</button>
+<button onclick="closeProfile()">Close</button>
+</div>
 </div>
 
 <div id="app">
@@ -141,13 +193,17 @@ flex:1;
 
 <div id="topBar">
 <div id="chatHeader">No chat</div>
-<div id="status"></div>
+<div>
+<span id="status"></span>
+<button onclick="openProfile()">Profile</button>
+</div>
 </div>
 
 <div id="messages"></div>
 
 <div id="inputArea">
 <input id="messageInput">
+<input type="file" id="fileInput">
 <button onclick="sendMessage()">Send</button>
 </div>
 
@@ -157,24 +213,26 @@ flex:1;
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <script>
 
 const firebaseConfig={
 apiKey:"AIzaSyB2XCUvOiNF4Lpy3ZSYN6rlXjMy1pNLL2M",
 authDomain:"maggyvibeqq.firebaseapp.com",
-projectId:"maggyvibeqq"
+projectId:"maggyvibeqq",
+storageBucket:"maggyvibeqq.appspot.com"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
+const storage=firebase.storage();
 
 const secretCode="MAGGY2026";
 
 let username=localStorage.getItem("maggyUser")||"";
 let avatarColorLocal=localStorage.getItem("maggyAvatar")||"#ff2f92";
 let currentChat=null;
-let currentUserWatching=null;
 
 if(username) startApp();
 
@@ -206,6 +264,29 @@ startApp();
 
 }
 
+/* PROFILE */
+function openProfile(){
+profileModal.style.display="flex";
+profileName.innerText=username;
+profileColor.value=avatarColorLocal;
+}
+
+function closeProfile(){
+profileModal.style.display="none";
+}
+
+function saveProfile(){
+
+let color=profileColor.value;
+
+db.collection("users").doc(username).update({avatar:color});
+
+avatarColorLocal=color;
+localStorage.setItem("maggyAvatar",color);
+
+alert("Saved!");
+}
+
 /* START */
 function startApp(){
 
@@ -213,20 +294,16 @@ login.style.display="none";
 app.style.display="flex";
 
 setOnline();
+Notification.requestPermission();
 
 }
 
 /* ONLINE */
 function setOnline(){
 
-function update(){
-db.collection("online").doc(username).set({
-time:Date.now()
-});
-}
-
-update();
-setInterval(update,15000);
+setInterval(()=>{
+db.collection("online").doc(username).set({time:Date.now()});
+},15000);
 
 }
 
@@ -257,11 +334,10 @@ return[a,b].sort().join("_");
 function openChat(user){
 
 currentChat=getChatId(username,user);
-currentUserWatching=user;
-
 chatHeader.innerText=user;
 
 watchStatus(user);
+watchTyping();
 loadMessages();
 
 }
@@ -291,6 +367,45 @@ status.innerText="Last seen: "+d.getHours()+":"+String(d.getMinutes()).padStart(
 
 }
 
+/* TYPING */
+let typingTimeout;
+
+messageInput.addEventListener("input",()=>{
+
+db.collection("typing").doc(currentChat+"_"+username).set({
+user:username,
+time:Date.now()
+});
+
+clearTimeout(typingTimeout);
+
+typingTimeout=setTimeout(()=>{
+db.collection("typing").doc(currentChat+"_"+username).delete();
+},2000);
+
+});
+
+function watchTyping(){
+
+db.collection("typing").onSnapshot(s=>{
+
+let arr=[];
+
+s.forEach(doc=>{
+let d=doc.data();
+if(d.user!==username && doc.id.startsWith(currentChat)){
+arr.push(d.user);
+}
+});
+
+if(arr.length>0){
+status.innerText=arr.join(", ")+" typing...";
+}
+
+});
+
+}
+
 /* SEND */
 function sendMessage(){
 
@@ -302,32 +417,63 @@ chatId:currentChat,
 sender:username,
 text,
 time:Date.now(),
-avatar:avatarColorLocal
+avatar:avatarColorLocal,
+reactions:[]
 });
 
 messageInput.value="";
 }
 
-/* EDIT / DELETE */
-function messageAction(id, currentText){
+/* PHOTO */
+fileInput.addEventListener("change", async ()=>{
 
-let action=prompt("1 = Edit, 2 = Delete");
+let file=fileInput.files[0];
+if(!file||!currentChat)return;
 
-if(action==="1"){
+let ref=storage.ref("images/"+Date.now()+"_"+file.name);
 
-let newText=prompt("Edit message:", currentText);
-if(!newText)return;
+await ref.put(file);
 
-db.collection("messages").doc(id).update({
-text:newText
+let url=await ref.getDownloadURL();
+
+db.collection("messages").add({
+chatId:currentChat,
+sender:username,
+image:url,
+time:Date.now(),
+avatar:avatarColorLocal,
+reactions:[]
 });
 
+});
+
+/* ACTION */
+function messageAction(id,text){
+
+let action=prompt("1=Edit 2=Delete 3=React");
+
+if(action==="1"){
+let newText=prompt("Edit:",text);
+if(newText){
+db.collection("messages").doc(id).update({text:newText});
+}
 }
 
 if(action==="2"){
-
 db.collection("messages").doc(id).delete();
+}
 
+if(action==="3"){
+let emoji=prompt("❤️ 😂 🔥");
+if(!emoji)return;
+
+let ref=db.collection("messages").doc(id);
+
+ref.get().then(doc=>{
+let r=doc.data().reactions||[];
+r.push(emoji);
+ref.update({reactions:r});
+});
 }
 
 }
@@ -354,15 +500,30 @@ arr.forEach(m=>{
 
 let cls=m.sender===username?"me":"other";
 
+let d=new Date(m.time);
+let time=d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");
+
+let content=m.text?m.text:`<img src="${m.image}">`;
+
+if(document.hidden && m.sender!==username){
+new Notification(m.sender,{body:m.text||"📷 Photo"});
+}
+
+let reactions=(m.reactions||[]).join(" ");
+
 html+=`
 <div class="row">
 <div class="avatar" style="background:${m.avatar}">
 ${m.sender[0]}
 </div>
 
-<div class="message ${cls}" onclick="${m.sender===username ? `messageAction('${m.id}','${m.text}')` : ''}">
+<div class="message ${cls}" onclick="messageAction('${m.id}','${m.text||""}')">
 <b>${m.sender}</b><br>
-${m.text}
+${content}
+
+<div class="time">${time}</div>
+<div class="reactions">${reactions}</div>
+
 </div>
 </div>
 `;
