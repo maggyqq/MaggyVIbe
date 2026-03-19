@@ -5,104 +5,67 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Maggy Vibe</title>
+<title>Maggy Vibe v7</title>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
-background:#0a0a0a;
+font-family:-apple-system,Arial;
+background:#0b0b0d;
 color:white;
 }
 
-/* LOGIN */
-#login{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-height:100vh;
-}
-
-/* SETTINGS */
-#settingsModal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.85);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:5;
-}
-
-#settingsBox{
-background:#1c1c22;
-padding:20px;
-border-radius:14px;
-width:260px;
-text-align:center;
-}
-
-/* INPUT */
-input, textarea{
-padding:12px;
-border-radius:12px;
-border:none;
-margin:6px;
-background:#1c1c22;
-color:white;
-width:90%;
-}
-
-button{
-padding:10px;
-border:none;
-border-radius:10px;
-background:#ff2f92;
-color:white;
-cursor:pointer;
-}
-
-/* APP */
+/* LAYOUT */
 #app{
-display:none;
-height:100vh;
 display:flex;
-overflow:hidden;
+height:100vh;
 }
 
 /* SIDEBAR */
 #sidebar{
-width:260px;
-background:#121214;
-padding:10px;
+width:300px;
+background:#111;
+border-right:1px solid #222;
 overflow-y:auto;
 }
 
+/* CHAT ITEM */
 .chatItem{
+display:flex;
 padding:10px;
-border-radius:10px;
-background:#1c1c22;
-margin-bottom:6px;
 cursor:pointer;
+border-bottom:1px solid #1a1a1a;
 }
 
 .chatItem:hover{
-background:#ff2f92;
+background:#1c1c22;
 }
 
-/* MOBILE */
-@media(max-width:700px){
-#sidebar{
-position:absolute;
-width:100%;
-height:100%;
-z-index:2;
+.chatAvatar{
+width:40px;
+height:40px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+margin-right:10px;
+font-weight:bold;
 }
+
+.chatInfo{
+flex:1;
+}
+
+.chatTop{
+display:flex;
+justify-content:space-between;
+font-size:14px;
+}
+
+.chatLast{
+font-size:12px;
+opacity:0.6;
 }
 
 /* CHAT */
@@ -114,34 +77,41 @@ flex-direction:column;
 
 #topBar{
 padding:10px;
-border-bottom:1px solid #333;
+border-bottom:1px solid #222;
 display:flex;
 justify-content:space-between;
-align-items:center;
 }
 
+/* PINNED */
+#pinned{
+background:#1c1c22;
+padding:8px;
+display:none;
+font-size:12px;
+}
+
+/* MESSAGES */
 #messages{
 flex:1;
 overflow-y:auto;
 padding:15px;
 }
 
-/* MESSAGE */
 .row{
 display:flex;
 margin-bottom:10px;
 }
 
 .message{
-position:relative;
+max-width:65%;
 padding:10px;
-border-radius:12px;
-max-width:70%;
+border-radius:14px;
+position:relative;
 cursor:pointer;
 }
 
 .me{
-background:#ff2f92;
+background:#2b5278;
 margin-left:auto;
 }
 
@@ -149,52 +119,60 @@ margin-left:auto;
 background:#1f1f25;
 }
 
-.avatar{
-width:32px;
-height:32px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-margin-right:6px;
-font-weight:bold;
-}
-
 .time{
-position:absolute;
-bottom:4px;
-right:8px;
 font-size:10px;
 opacity:0.6;
+text-align:right;
 }
 
-.reactions{
-margin-top:6px;
+.status{
+font-size:10px;
+text-align:right;
 }
 
 /* INPUT */
 #inputArea{
 display:flex;
 padding:10px;
-border-top:1px solid #333;
+border-top:1px solid #222;
 gap:5px;
 }
 
 #messageInput{
 flex:1;
+padding:10px;
+border-radius:20px;
+border:none;
+background:#1c1c22;
+color:white;
 }
 
-/* MOBILE FIX SEND */
-@media(max-width:700px){
-#inputArea{
-padding:8px;
-}
-#messageInput{
-font-size:16px;
-}
 button{
+background:#2b5278;
+border:none;
+color:white;
 padding:10px;
+border-radius:20px;
 }
+
+/* SETTINGS */
+#settings{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+#settingsBox{
+background:#1c1c22;
+padding:20px;
+border-radius:12px;
+text-align:center;
 }
 
 </style>
@@ -203,59 +181,20 @@ padding:10px;
 
 <body>
 
-<!-- LOGIN -->
-<div id="login">
-<h2>Maggy Vibe</h2>
-
-<input id="codeInput" placeholder="Code">
-<input id="usernameInput" placeholder="Username">
-<input type="color" id="avatarColor">
-
-<button onclick="enter()">Enter</button>
-</div>
-
-<!-- SETTINGS -->
-<div id="settingsModal">
-<div id="settingsBox">
-<h3>Settings</h3>
-
-<p id="profileName"></p>
-
-<input type="color" id="profileColor">
-<textarea id="profileBio" placeholder="Bio"></textarea>
-
-<button onclick="saveProfile()">Save</button>
-<button onclick="closeSettings()">Close</button>
-
-</div>
-</div>
-
-<!-- APP -->
 <div id="app">
 
 <div id="sidebar">
-
-<h3>Chats</h3>
 <div id="chatList"></div>
-
-<hr>
-
-<h3>Search</h3>
-<input id="searchBox">
-<button onclick="searchUser()">Find</button>
-<div id="searchResult"></div>
-
 </div>
 
 <div id="chatWindow">
 
 <div id="topBar">
-<div id="chatHeader">No chat</div>
-<div>
-<span id="status"></span>
-<button onclick="openSettings()">⚙️</button>
+<div id="chatHeader">Select chat</div>
+<div><button onclick="openSettings()">⚙️</button></div>
 </div>
-</div>
+
+<div id="pinned"></div>
 
 <div id="messages"></div>
 
@@ -266,6 +205,16 @@ padding:10px;
 
 </div>
 
+</div>
+
+<!-- SETTINGS -->
+<div id="settings">
+<div id="settingsBox">
+<h3>Profile</h3>
+<input type="color" id="profileColor"><br>
+<button onclick="saveProfile()">Save</button>
+<button onclick="closeSettings()">Close</button>
+</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -282,110 +231,39 @@ projectId:"maggyvibeqq"
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 
-const secretCode="MAGGY2026";
-
-let username=localStorage.getItem("maggyUser")||"";
-let avatarColorLocal=localStorage.getItem("maggyAvatar")||"#ff2f92";
+let username=localStorage.getItem("maggyUser")||prompt("Username?");
+let avatarColorLocal=localStorage.getItem("maggyAvatar")||"#2b5278";
 let currentChat=null;
-
-if(username) startApp();
-
-/* LOGIN */
-function enter(){
-
-let code=codeInput.value;
-let name=usernameInput.value.trim();
-let color=avatarColor.value;
-
-if(code!==secretCode) return alert("Wrong code");
-
-db.collection("users").doc(name).get().then(doc=>{
-if(doc.exists) return alert("Taken");
-
-db.collection("users").doc(name).set({
-avatar:color,
-bio:""
-});
-
-username=name;
-avatarColorLocal=color;
-
-localStorage.setItem("maggyUser",name);
-localStorage.setItem("maggyAvatar",color);
-
-startApp();
-});
-
-}
 
 /* SETTINGS */
 function openSettings(){
-settingsModal.style.display="flex";
-profileName.innerText=username;
+settings.style.display="flex";
 profileColor.value=avatarColorLocal;
-
-db.collection("users").doc(username).get().then(doc=>{
-profileBio.value=doc.data().bio||"";
-});
 }
 
 function closeSettings(){
-settingsModal.style.display="none";
+settings.style.display="none";
 }
 
 function saveProfile(){
-
-let color=profileColor.value;
-let bio=profileBio.value;
-
-db.collection("users").doc(username).update({
-avatar:color,
-bio:bio
-});
-
-avatarColorLocal=color;
-localStorage.setItem("maggyAvatar",color);
-
-alert("Saved");
+avatarColorLocal=profileColor.value;
+localStorage.setItem("maggyAvatar",avatarColorLocal);
 }
 
-/* START */
-function startApp(){
-
-login.style.display="none";
-app.style.display="flex";
-
-loadChats();
-}
-
-/* SEARCH */
-function searchUser(){
-
-let name=searchBox.value.trim();
-
-db.collection("users").doc(name).get().then(doc=>{
-if(!doc.exists){
-searchResult.innerHTML="Not found";
-return;
-}
-
-searchResult.innerHTML=
-`<button onclick="openChat('${name}')">${name}</button>`;
-});
-
-}
-
-/* CHAT */
+/* CHAT ID */
 function getChatId(a,b){
 return[a,b].sort().join("_");
 }
 
+/* OPEN CHAT */
 function openChat(user){
 
 currentChat=getChatId(username,user);
 chatHeader.innerText=user;
 
+markAsRead();
 loadMessages();
+
 }
 
 /* SEND */
@@ -399,7 +277,7 @@ chatId:currentChat,
 sender:username,
 text,
 time:Date.now(),
-avatar:avatarColorLocal,
+read:false,
 reactions:[]
 });
 
@@ -410,6 +288,60 @@ time:Date.now()
 });
 
 messageInput.value="";
+}
+
+/* READ */
+function markAsRead(){
+
+db.collection("messages")
+.where("chatId","==",currentChat)
+.get()
+.then(s=>{
+
+s.forEach(doc=>{
+let d=doc.data();
+
+if(d.sender!==username && !d.read){
+db.collection("messages").doc(doc.id).update({read:true});
+}
+
+});
+
+});
+
+}
+
+/* PIN */
+function pinMessage(text){
+db.collection("chats").doc(currentChat).update({
+pinned:text
+});
+}
+
+/* ACTION */
+function messageAction(id,text){
+
+let action=prompt("1=React 2=Pin");
+
+if(action==="1"){
+
+let emoji=prompt("❤️ 😂 🔥");
+if(!emoji)return;
+
+let ref=db.collection("messages").doc(id);
+
+ref.get().then(doc=>{
+let r=doc.data().reactions||[];
+r.push(emoji);
+ref.update({reactions:r});
+});
+
+}
+
+if(action==="2"){
+pinMessage(text);
+}
+
 }
 
 /* LOAD CHATS */
@@ -423,13 +355,13 @@ db.collection("chats")
 let html="";
 
 s.forEach(doc=>{
-let data=doc.data();
-let other=data.users.find(u=>u!==username);
+let d=doc.data();
+let other=d.users.find(u=>u!==username);
 
 html+=`
 <div class="chatItem" onclick="openChat('${other}')">
 <b>${other}</b><br>
-${data.last||""}
+${d.last||""}
 </div>
 `;
 });
@@ -460,28 +392,36 @@ arr.forEach(m=>{
 
 let cls=m.sender===username?"me":"other";
 
-let d=new Date(m.time);
-let time=d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");
+let t=new Date(m.time).getHours()+":"+
+String(new Date(m.time).getMinutes()).padStart(2,"0");
+
+let statusMark=m.sender===username?(m.read?"✔️✔️":"✔️"):"";
 
 let reactions=(m.reactions||[]).join(" ");
 
 html+=`
 <div class="row">
-<div class="avatar" style="background:${m.avatar}">
-${m.sender[0]}
-</div>
-
-<div class="message ${cls}" onclick="react('${m.id}')">
-<b>${m.sender}</b><br>
+<div class="message ${cls}" onclick="messageAction('${m.id}','${m.text}')">
 ${m.text}
 
-<div class="time">${time}</div>
-<div class="reactions">${reactions}</div>
+<div class="time">${t}</div>
+<div class="status">${statusMark}</div>
+<div>${reactions}</div>
 
 </div>
 </div>
 `;
 
+});
+
+/* PINNED */
+db.collection("chats").doc(currentChat).get().then(doc=>{
+if(doc.exists && doc.data().pinned){
+pinned.style.display="block";
+pinned.innerText="📌 "+doc.data().pinned;
+}else{
+pinned.style.display="none";
+}
 });
 
 messages.innerHTML=html;
@@ -491,22 +431,13 @@ messages.scrollTop=messages.scrollHeight;
 
 }
 
-/* REACTIONS */
-function react(id){
-
-let emoji=prompt("❤️ 😂 🔥");
-
-if(!emoji) return;
-
-let ref=db.collection("messages").doc(id);
-
-ref.get().then(doc=>{
-let r=doc.data().reactions||[];
-r.push(emoji);
-ref.update({reactions:r});
+/* ENTER SEND */
+messageInput.addEventListener("keypress",e=>{
+if(e.key==="Enter") sendMessage();
 });
 
-}
+/* START */
+loadChats();
 
 </script>
 
